@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
+import tkinter.filedialog
 import itertools
 import threading
 import time
@@ -7,17 +8,25 @@ import zipfile
 import os
 
 def main():
-    k = knrf()
+    debug = False
+    k = knrf(debug)
     win = k.mk_window()
     win.title("py-brute")
     win.mainloop()
 
+
+    #TODO:
+    # 2. update READ ME
+    # 3. Make an exe file
+
 class knrf:
-    def __init__(self):
+    def __init__(self, debug=False):
+        self.debug = debug
         self.window = tk.Tk()
         self.lock = threading.Lock()
         self.timer_count = 0
         self.timer_switch = True
+        self.screenWidth = 85
         self.start_msg = """
         ━━━━━━━━━━━━━━┏┓━━━━━━━━━━┏┓━━━━━
         ━━━━━━━━━━━━━━┃┃━━━━━━━━━┏┛┗┓━━━━
@@ -40,46 +49,55 @@ class knrf:
 
         Tips to speed up the brute focre process:
         if you know the length of the password this will help alot.
+
+        support: https://paypal.me/FrankMulvie
+        website: https://frankmau5.tech/
         """
 
         zip_frame = tk.Frame()
-        zip_path_lab = tk.Label(text="Zip file path:", master=zip_frame)
-        self.zip_path_ent = tk.Entry(width=15, master=zip_frame)
+        zip_path_lab = tk.Label(text="Zip file path:  ", master=zip_frame)
+        self.zip_path_ent = tk.Entry(width=self.screenWidth, master=zip_frame)
+        self.Open_btn = tk.Button(text="Open ...",master=zip_frame)
+        self.Open_btn.bind("<Button-1>",self.open_btn_handler)
         zip_path_lab.grid(row=0,column=0)
         self.zip_path_ent.grid(row=0,column=1)
+        self.Open_btn.grid(row=0,column=2)
         zip_frame.pack(fill=tk.X)
 
         start_frame = tk.Frame()
         start_num_lab = tk.Label(text="Start number:", master=start_frame)
-        self.start_num_ent = tk.Entry(width=14, master=start_frame)
+        self.start_num_ent = tk.Entry(width=self.screenWidth, master=start_frame)
         start_num_lab.grid(row=0,column=0)
         self.start_num_ent.grid(row=0,column=1)
         start_frame.pack(fill=tk.X)
 
         max_frame = tk.Frame()
         max_num_lab = tk.Label(text="Max number:", master=max_frame)
-        self.max_num_ent = tk.Entry(width=15, master=max_frame)
+        self.max_num_ent = tk.Entry(width=self.screenWidth, master=max_frame)
         max_num_lab.grid(row=0,column=0)
         self.max_num_ent.grid(row=0,column=1)
         max_frame.pack(fill=tk.X)
 
         self.output = tk.Text()
-        self.output.insert("1.0","Output console")
+        self.output.insert("1.0","")
         self.output.pack(fill=tk.X)
 
         self.start_btn = tk.Button(text="Run")
         self.start_btn.bind("<Button-1>",self.start_btn_handler)
         self.start_btn.pack(fill=tk.X)
         
-        self.output.insert("1.0", self.start_msg )
+        self.output.insert("1.0", self.start_msg)
         self.window.bind("<k>",self.msg_box)        
 
     def msg_box(self, event):
-        messagebox.showinfo("About", "Made by knrf")
+        messagebox.showinfo("About", "Made by frankmau5\n website: https://frankmau5.tech/")
 
     def mk_window(self):
         return self.window
-
+    
+    def open_btn_handler(self, event):
+        io_data = tkinter.filedialog.askopenfile()
+        self.zip_path_ent.insert("0", io_data.name)
 
     def start_btn_handler(self,event):
         self.output.delete("1.0", tk.END)
@@ -91,8 +109,7 @@ class knrf:
         try:
             self.start_int = int(start)
             if self.start_int == 0:
-                self.print_output("Error with start number. It must be a number bigger then 0")
-                return 0
+                self.start_int = 1
             if self.start_int > 16:
                 self.print_output("Error you can not have a start number bigger then 16")
                 return 0
@@ -135,7 +152,6 @@ class knrf:
         self.print_output("Starting brute force")
         self.worker.start()
 
-
     def print_output(self,msg):
         self.lock.acquire()
         current_text = self.output.get("1.0", tk.END)
@@ -171,14 +187,17 @@ class knrf:
         if self.timer_switch:
             self.window.after(1200,self.timer)
 
+    def debug_print(self, msg):
+        if self.debug:
+            print(f"debug: {msg}")
+
     def start_bf(self, start, max_num, filepath):
         c = [1,2,3,4,5,6,7,8,9,0,'q','a','z','w','s','x','e','d','c','r','f','v','t','g','b','y','h','n','u','j','m','i','k','o','l','p','Q','A','Z','W','S','X','E','D','C','R','F','V','T','G','B','Y','H','N','N','U','J','M','I','K','O','L','P']
         
         self.window.after(1000,self.timer)
-        self.myzip = zipfile.ZipFile(filepath);
+        self.myzip = zipfile.ZipFile(filepath)
         dirname, fname = os.path.split(filepath)
         self.dirname = dirname
-        self.old = len(os.listdir(self.dirname))
         
         # add one to max_number so that it does the right amount of loops
         max_num += 1
@@ -188,32 +207,34 @@ class knrf:
         self.myzip.close()
 
     def brute_force(self,char_list, pass_len, filepath, max_num):
-        self.print_output("Working on {} char passwords".format(pass_len))
         gen = itertools.product(char_list,repeat=pass_len)
         for passwd in gen:
             new_list = [str(i) for i in passwd]
             passwd_str = ''.join(new_list)
+            self.debug_print(passwd_str)
             
             try:
-                self.myzip.extractall(path=self.dirname,pwd=str.encode(passwd_str))
-                time.sleep(2)
-                self.new = len(os.listdir(self.dirname))
-                if  self.new > self.old:
+                
+                name = self.myzip.infolist()
+                data = self.myzip.read(name[0], pwd=str.encode(passwd_str)) # NOTE: this line is very slow !
+                if  data != b'':
+                    print("Found")
                     self.clean_up()
                     t = "password is " + passwd_str
                     self.print_output(t)
                     return 0
+
             except zipfile.BadZipFile as badzip:
                 self.error = str(badzip)
+                self.debug_print(self.error)
             except Exception as e:
                 self.error = str(e)
                 if "Bad" in self.error:
-                    continue
+                    self.debug_print(self.error)
                 if "Error -3" in self.error:
-                    continue
-                # Do something here with the error
-                print(self.error)
-            
+                    self.debug_print(self.error)
+                
+
         ma = max_num - 1
         if pass_len == ma:
             self.clean_up()
