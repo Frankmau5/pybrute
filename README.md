@@ -27,5 +27,8 @@ if you know the length of the password this will help alot.
 ![Image needed](/imgs/image2.PNG)
 
 
- 
- 
+ # Install
+1. Download exe file from [here](https://github.com/Frankmau5/pybrute/releases/download/v1.0.0/pybrute.exe)
+2. run exe file 
+
+On Mac & Linux just run the file call pybrute.py with python in the command-line.
